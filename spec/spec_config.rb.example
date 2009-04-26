@@ -1,0 +1,1 @@
+DB = Sequel.connect 'sqlite:///spec_db.sqlite'
