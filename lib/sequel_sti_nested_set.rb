@@ -78,7 +78,9 @@ module Sequel
           self.left  = model.dataset.max(self.class.right_column).to_i + 1
           self.right = self.left + 1
 
-          send("#{model.nested_set_options[:sti_key]}=", model.name.to_s)
+          if model.nested_set_options[:sti_key]
+            send("#{model.nested_set_options[:sti_key]}=", model.name.to_s)
+          end
         end
         private :before_create
 
