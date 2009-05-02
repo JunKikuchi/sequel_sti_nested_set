@@ -75,6 +75,8 @@ module Sequel
 
       module InstanceMethods
         def before_create
+          super
+
           self.left  = model.dataset.max(self.class.right_column).to_i + 1
           self.right = self.left + 1
 
@@ -82,7 +84,6 @@ module Sequel
             send("#{model.nested_set_options[:sti_key]}=", model.name.to_s)
           end
         end
-        private :before_create
 
         def parent
           model.dataset.filter(primary_key => parent_id).first
