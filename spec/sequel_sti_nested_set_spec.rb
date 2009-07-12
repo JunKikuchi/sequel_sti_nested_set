@@ -2028,4 +2028,118 @@ describe Sequel::Plugins::StiNestedSet do
 
     it_should_behave_like 'StiNestedSet'
   end
+
+  describe 'ノードを削除' do
+    before do
+      Node.create_table!
+    end
+
+    it '最初のノードを削除' do
+      @node1 = Node.new.save
+      @node2 = Node.new.save
+      @node3 = Node.new.save
+
+      @node1.left.should  == 1
+      @node1.right.should == 2
+      @node2.left.should  == 3
+      @node2.right.should == 4
+      @node3.left.should  == 5
+      @node3.right.should == 6
+
+      @node1.destroy
+
+      lambda do
+        @node1.reload
+      end.should raise_error Sequel::Error
+      @node2.reload
+      @node3.reload
+
+      @node2.left.should  == 1
+      @node2.right.should == 2
+      @node3.left.should  == 3
+      @node3.right.should == 4
+    end
+
+    it '真ん中のノードを削除' do
+      @node1 = Node.new.save
+      @node2 = Node.new.save
+      @node3 = Node.new.save
+
+      @node1.left.should  == 1
+      @node1.right.should == 2
+      @node2.left.should  == 3
+      @node2.right.should == 4
+      @node3.left.should  == 5
+      @node3.right.should == 6
+
+      @node2.destroy
+
+      @node1.reload
+      lambda do
+        @node2.reload
+      end.should raise_error Sequel::Error
+      @node3.reload
+
+      @node1.left.should  == 1
+      @node1.right.should == 2
+      @node3.left.should  == 3
+      @node3.right.should == 4
+    end
+
+    it '最後のノードを削除' do
+      @node1 = Node.new.save
+      @node2 = Node.new.save
+      @node3 = Node.new.save
+
+      @node1.left.should  == 1
+      @node1.right.should == 2
+      @node2.left.should  == 3
+      @node2.right.should == 4
+      @node3.left.should  == 5
+      @node3.right.should == 6
+
+      @node3.destroy
+
+      @node1.reload
+      @node2.reload
+      lambda do
+        @node3.reload
+      end.should raise_error Sequel::Error
+
+      @node1.left.should  == 1
+      @node1.right.should == 2
+      @node2.left.should  == 3
+      @node2.right.should == 4
+    end
+
+    it 'ツリーを削除' do
+      @node1 = Node.new.save
+      @node2 = Node.new.save
+      @node3 = Node.new.save
+
+      @node2.move_to_child_of @node1
+
+      @node3.reload
+
+      @node1.left.should  == 1
+      @node2.left.should  == 2
+      @node2.right.should == 3
+      @node1.right.should == 4
+      @node3.left.should  == 5
+      @node3.right.should == 6
+
+      @node1.destroy
+
+      lambda do
+        @node1.reload
+      end.should raise_error Sequel::Error
+      lambda do
+        @node2.reload
+      end.should raise_error Sequel::Error
+      @node3.reload
+
+      @node3.left.should  == 1
+      @node3.right.should == 2
+    end
+  end
 end

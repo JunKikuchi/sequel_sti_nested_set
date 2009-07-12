@@ -85,6 +85,26 @@ module Sequel
           end
         end
 
+        def before_destroy
+          super
+
+          all_children.delete
+
+          shift = (right - left) + 1
+
+          model.dataset.update <<END_OF_SQL
+#{self.class.left_column} = CASE
+WHEN #{self.class.left_column} > #{left}
+  THEN #{self.class.left_column} - #{shift}
+  ELSE #{self.class.left_column} END,
+#{self.class.right_column} = CASE
+WHEN #{self.class.right_column} > #{right}
+  THEN #{self.class.right_column} - #{shift}
+  ELSE #{self.class.right_column}
+END
+END_OF_SQL
+        end
+
         def parent
           model.dataset.filter(primary_key => parent_id).first
         end
@@ -269,25 +289,25 @@ module Sequel
             end
 
             model.dataset.update <<END_OF_SQL
-  #{self.class.left_column} = CASE
-  WHEN #{self.class.left_column} BETWEEN #{cur_left} AND #{cur_right}
-    THEN #{self.class.left_column} + #{shift}
-  WHEN #{self.class.left_column} BETWEEN #{b_left} AND #{b_right}
-    THEN #{self.class.left_column} + #{updown}
-    ELSE #{self.class.left_column} END,
-  #{self.class.right_column} = CASE
-  WHEN #{self.class.right_column} BETWEEN #{cur_left} AND #{cur_right}
-    THEN #{self.class.right_column} + #{shift}
-  WHEN #{self.class.right_column} BETWEEN #{b_left} AND #{b_right}
-    THEN #{self.class.right_column} + #{updown}
-    ELSE #{self.class.right_column}
-  END,
+#{self.class.left_column} = CASE
+WHEN #{self.class.left_column} BETWEEN #{cur_left} AND #{cur_right}
+  THEN #{self.class.left_column} + #{shift}
+WHEN #{self.class.left_column} BETWEEN #{b_left} AND #{b_right}
+  THEN #{self.class.left_column} + #{updown}
+  ELSE #{self.class.left_column} END,
+#{self.class.right_column} = CASE
+WHEN #{self.class.right_column} BETWEEN #{cur_left} AND #{cur_right}
+  THEN #{self.class.right_column} + #{shift}
+WHEN #{self.class.right_column} BETWEEN #{b_left} AND #{b_right}
+  THEN #{self.class.right_column} + #{updown}
+  ELSE #{self.class.right_column}
+END,
 
-  #{self.class.parent_id_column} = CASE
-  WHEN #{self.primary_key} = #{self.id}
-    THEN #{new_parent}
-    ELSE #{self.class.parent_id_column}
-  END
+#{self.class.parent_id_column} = CASE
+WHEN #{self.primary_key} = #{self.id}
+  THEN #{new_parent}
+  ELSE #{self.class.parent_id_column}
+END
 END_OF_SQL
 
             target.reload
